@@ -1,0 +1,103 @@
+#!/bin/sh
+
+display_help() {
+	cat <<-EOF
+	usage:
+	  git create [-n|--name <repo-name>] [-u|--user <username>] [-p|--private <true/false>]
+
+	options:
+      -h, --help                      Display this help information
+	EOF
+	exit 0
+}
+
+ask_for_name() {
+	echo "What name will the new repository have?"
+	read _name
+	echo _name
+}
+
+ask_for_private() {
+	echo "Will it be private? [y/N]"
+	read _private
+	if [[ $private =~ '[yY]' ]]; then
+		echo "true"
+	else
+		echo "false"
+	fi
+}
+
+get_username() {
+	_uname=$(git config user.name)
+	if [[ -z username ]]; then
+		cat <<-EOF
+		Run
+
+		git config --global user.email "you@example.com"
+		git config --global user.name "Your Name"
+
+		to set your account's default identity.
+		Omit --global to set the identity only in this repository.
+		EOF
+		exit 1
+	fi
+	echo _uname
+}
+
+get_opts() {
+	while [[ $# -gt 0 ]]; do
+		key="$1"
+		case $key in
+			-h|--help)
+			display_help
+			exit 0;;
+
+			-n|--name)
+			NAME="$2"
+			shift;shift;;
+
+			-p|private)
+			PRIVATE="$2"
+			shift;shift;;
+
+			-u|--user)
+			USERNAME="$2"
+			shift;shift;;
+
+			*) shift;;
+		esac
+	done
+
+	if [[ -z $USERNAME ]]; then
+		USERNAME=$(get_username)
+	fi
+	if [[ -z $NAME ]]; then
+		NAME=$(ask_for_name)
+	fi
+	if [[ -z $PRIVATE ]]; then
+		PRIVATE="false"
+	fi
+}
+
+create() {
+	get_opts $@
+	json="{\"name\": \"$NAME\",\"auto_init\":\"true\",\"private\": \"$PRIVATE\"}"
+	output=$(curl -s -u "kanales" -d "$(echo $json)" https://api.github.com/user/repos)
+	url=$(python -c "
+import json
+s=json.loads('''$output''')
+try: 
+	print('https://github.com/' + s['full_name'])
+except KeyError:
+	print(s['message'])")
+
+	if [[ $url = https* ]]; then
+		git clone $url
+	else
+		echo $url
+	fi
+}
+
+create $@
+
+
