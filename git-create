@@ -3,7 +3,7 @@
 display_help() {
 	cat <<-EOF
 	usage:
-	  git create [-n|--name <repo-name>] [-u|--user <username>] [-p|--private <true/false>]
+	  git create [-n|--name <repo-name>] [-u|--user <username>] [-p|--private]
 
 	options:
       -h, --help                      Display this help information
@@ -57,7 +57,7 @@ get_opts() {
 			shift;shift;;
 
 			-p|private)
-			PRIVATE="$2"
+			PRIVATE="true"
 			shift;shift;;
 
 			-u|--user)
